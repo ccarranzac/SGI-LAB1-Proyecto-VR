@@ -24,6 +24,11 @@ using UnityEngine;
 /// </summary>
 public class ObjectController : MonoBehaviour
 {
+    private bool isPointerOver = false;
+    private float pointerEnterTime = 0f;
+    private Vector3 originalScale;
+    private Material originalMaterial;
+    private Material highlightMaterial;
     /// <summary>
     /// The material to use when this object is inactive (not being gazed at).
     /// </summary>
@@ -33,6 +38,12 @@ public class ObjectController : MonoBehaviour
     /// The material to use when this object is active (gazed at).
     /// </summary>
     public Material GazedAtMaterial;
+
+    public GameObject objectToSpawn;
+
+    public AudioClip selectionSound;
+
+    public GameObject prefabToSpawn;
 
     // The objects are about 1 meter in radius, so the min/max target distance are
     // set so that the objects are always within the room (which is about 5 meters
@@ -45,6 +56,8 @@ public class ObjectController : MonoBehaviour
     private Renderer _myRenderer;
     private Vector3 _startingPosition;
 
+    GameObject instantiatedPrefab = null;
+
     /// <summary>
     /// Start is called before the first frame update.
     /// </summary>
@@ -52,7 +65,104 @@ public class ObjectController : MonoBehaviour
     {
         _startingPosition = transform.parent.localPosition;
         _myRenderer = GetComponent<Renderer>();
+        originalMaterial = GetComponent<Renderer>().material;
+        highlightMaterial = new Material(originalMaterial);
+        highlightMaterial.color = Color.yellow;
         SetMaterial(false);
+        GameObject specificObject = GameObject.Find("TABLE_Folding");
+        specificObject.transform.GetChild(0).gameObject.SetActive(true);
+    }
+
+    public void Update()
+    {
+        if (isPointerOver && Time.time - pointerEnterTime > 2f)
+        {
+            var main = instantiatedPrefab.GetComponent<ParticleSystem>().main;
+            main.startColor = new ParticleSystem.MinMaxGradient(Color.green);
+            Debug.Log("objeto seleccionado: "+ gameObject.tag);
+            AudioSource.PlayClipAtPoint(selectionSound, transform.position);
+            if(gameObject.tag == "cafe"){
+                // if(gameObject.name == "umbrella"){
+                //     //spawn in ground
+                //     Vector3 spawnPosition = transform.position - transform.right;
+                //     spawnPosition.y = 0.5f;
+                //     Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
+                // }
+                // if(gameObject.name == "table.001" || gameObject.name == "table.002" || gameObject.name == "table.003" || gameObject.name == "table"){
+                //     //spawn in ground
+                //     Vector3 spawnPosition = transform.position;
+                //     spawnPosition.y = 1f;
+                //     Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
+                // }
+                Vector3 spawnPosition = transform.position;
+                spawnPosition.y = 1f;
+                spawnPosition.z = spawnPosition.z - 1.2f;
+                spawnPosition.x = spawnPosition.x + 0.5f;
+                Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
+            }
+            if(gameObject.tag == "hotdogs"){
+                Vector3 spawnPosition = transform.position + transform.right - transform.up;
+                spawnPosition.y = 0.5f;
+                Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
+            }
+            if(gameObject.tag == "icecream"){
+                Vector3 spawnPosition = transform.position - transform.right;
+                spawnPosition.y = 0.5f;
+                Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
+            }
+            if(gameObject.tag == "stand"){
+                print(gameObject.name);
+                if(gameObject.name == "Side2cafe"){
+                    Vector3 offset = new Vector3(0, 0, -1); // Ajusta esto a lo que necesites
+                    GameObject specificObject = GameObject.Find("Player");
+                    specificObject.transform.position = gameObject.transform.position + offset;
+                }
+                if(gameObject.name == "Side2ice"){
+                    Vector3 offset = new Vector3(-2, 0, -4); // Ajusta esto a lo que necesites
+                    GameObject specificObject = GameObject.Find("Player");
+                    specificObject.transform.position = gameObject.transform.position + offset;
+                }
+                if(gameObject.name == "Side1hot"){
+                    Vector3 offset = new Vector3(3, 0, 1); // Ajusta esto a lo que necesites
+                    GameObject specificObject = GameObject.Find("Player");
+                    specificObject.transform.position = gameObject.transform.position + offset;
+                    //rotate player
+                    specificObject.transform.Rotate(0, 90, 0, Space.Self);
+                }
+                if(gameObject.name == "Side1general"){
+                    Vector3 offset = new Vector3(0, 0, 0); // Ajusta esto a lo que necesites
+                    GameObject specificObject = GameObject.Find("Player");
+                    specificObject.transform.position = gameObject.transform.position + offset;
+                    //rotate player
+                    specificObject.transform.Rotate(0, 180, 0, Space.Self);
+                }
+            }
+            if(gameObject.tag == "table"){
+                print("open menu");
+                GameObject specificObject = GameObject.Find("TABLE_Folding");
+                specificObject.transform.GetChild(0).gameObject.SetActive(true);
+            }
+            if(gameObject.tag == "panel"){
+                if(gameObject.name == "night"){
+                    Camera.main.backgroundColor = Color.black;
+                }
+                if(gameObject.name == "day"){
+                    Color32 newColor = new Color32(0x7D, 0x9A, 0xB9, 0xFF); // Replace with your hexadecimal color values
+                    Camera.main.backgroundColor = newColor;
+                }
+                // if(gameObject.name == "close"){
+                //     print("close");
+                //     GameObject specificObject = GameObject.Find("TABLE_Folding");
+                //     specificObject.transform.GetChild(0).gameObject.SetActive(false);
+                //     if (instantiatedPrefab != null)
+                //     {
+                //         Destroy(instantiatedPrefab);
+                //         instantiatedPrefab = null;
+                //     }
+                // }
+            }
+            isPointerOver = false;
+        }
     }
 
     /// <summary>
@@ -86,7 +196,25 @@ public class ObjectController : MonoBehaviour
     /// </summary>
     public void OnPointerEnter()
     {
-        SetMaterial(true);
+        if(GetComponent<Renderer>().tag != "table"){
+            isPointerOver = true;
+            pointerEnterTime = Time.time;
+            // originalScale = transform.localScale;
+            // transform.localScale += new Vector3(0.1f, 0.1f, 0.1f); // Increase size
+            //print(GetComponent<Renderer>().tag != "table");
+            if(GetComponent<Renderer>().name != "Cafe"){
+                GetComponent<Renderer>().material = highlightMaterial;
+            }
+            //GetComponent<Renderer>().material = highlightMaterial;
+            //SetMaterial(true);
+            instantiatedPrefab = Instantiate(prefabToSpawn, transform.position, Quaternion.identity);
+        }
+        else{
+            isPointerOver = true;
+            pointerEnterTime = Time.time;
+            instantiatedPrefab = Instantiate(prefabToSpawn, transform.position, Quaternion.identity);
+        }
+        
     }
 
     /// <summary>
@@ -94,7 +222,28 @@ public class ObjectController : MonoBehaviour
     /// </summary>
     public void OnPointerExit()
     {
-        SetMaterial(false);
+        if(GetComponent<Renderer>().tag != "table"){
+            isPointerOver = false;
+            //transform.localScale = originalScale;
+            if(GetComponent<Renderer>().name != "Cafe"){
+                GetComponent<Renderer>().material = originalMaterial;
+            }
+            //GetComponent<Renderer>().material = originalMaterial;
+            //SetMaterial(false);
+            if (instantiatedPrefab != null)
+            {
+                Destroy(instantiatedPrefab);
+                instantiatedPrefab = null;
+            }
+        }
+        else{
+            isPointerOver = false;
+            if (instantiatedPrefab != null)
+            {
+                Destroy(instantiatedPrefab);
+                instantiatedPrefab = null;
+            }
+        }
     }
 
     /// <summary>

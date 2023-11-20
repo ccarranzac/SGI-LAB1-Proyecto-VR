@@ -1,0 +1,4 @@
+repository "UPC Shop@unity_4B89E3CBF2A73752BCD8@cloud"
+  path "/"
+    br "/main"
+    co "/main"
